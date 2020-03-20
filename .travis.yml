@@ -1,0 +1,11 @@
+language: python
+python:
+  - "3.8"
+install:
+  - pip install flake8 yapf pytest mypy
+  - python setup.py install
+script:
+  - moodle_inscribe --help
+  - flake8 moodle_inscribe
+  - yapf -d -r moodle_inscribe/
+  - mypy moodle_inscribe/
