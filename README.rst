@@ -1,7 +1,7 @@
 moodle\_inscribe
 ================
 
-Inscribe students into moodle courses by their email
+Inscribe students into moodle courses by their email, even if the Moodle API is disabled.
 
 .. image:: https://img.shields.io/pypi/v/moodle_inscribe
    :alt: PyPI
