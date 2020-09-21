@@ -107,7 +107,7 @@ def main() -> int:
     enrolid, sesskey = get_enrolid_and_sesskey(args.host, args.course_id, args.moodle_session)
     student = get_student(args.host, args.course_id, args.email, sesskey, enrolid, args.moodle_session)
     if not student:
-        print('No student found with this email, or student already inscribed.')
+        print('No student found with email "{}", or student already inscribed.'.format(args.email))
         return 1
     inscribe_student(args.host, args.course_id, student['id'], sesskey, enrolid, args.moodle_session, args.role)
     print('Successfully inscribed {}'.format(student['fullname']))
