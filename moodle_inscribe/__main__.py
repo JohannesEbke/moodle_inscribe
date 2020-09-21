@@ -75,10 +75,12 @@ def inscribe_student(host, course_id, userid, sesskey, enrolid, moodle_session, 
     }
     moodle_post(host, data, moodle_session)
 
+
 def read_emails(file) -> list:
     with open(file, 'r') as myfile:
-        emails=myfile.read().split(os.linesep)
+        emails = myfile.read().split(os.linesep)
     return emails
+
 
 def main() -> int:
     parser = ArgumentParser(description='Inscribe Students into a Moodle course by email')
@@ -90,9 +92,7 @@ def main() -> int:
         help='The course id (look into the URL for the id parameter)',
         required=True
     )
-    parser.add_argument(
-        '--email', metavar='EMAIL', default=None, type=str, help='The email of the student to inscribe'
-    )
+    parser.add_argument('--email', metavar='EMAIL', default=None, type=str, help='The email of the student to inscribe')
     parser.add_argument(
         '--file',
         metavar='FILE',
@@ -124,16 +124,17 @@ def main() -> int:
     if bool(args.file):
         emails = read_emails(args.file)
 
-
     inscribe_error = False
-        
+
     for email in emails:
         email = email.strip()
         if len(email) != 0:
             enrolid, sesskey = get_enrolid_and_sesskey(args.host, args.course_id, args.moodle_session)
             student = get_student(args.host, args.course_id, email, sesskey, enrolid, args.moodle_session)
             if student:
-                inscribe_student(args.host, args.course_id, student['id'], sesskey, enrolid, args.moodle_session, args.role)
+                inscribe_student(
+                    args.host, args.course_id, student['id'], sesskey, enrolid, args.moodle_session, args.role
+                )
                 print('Successfully inscribed {}'.format(student['fullname']))
             else:
                 inscribe_error = True
