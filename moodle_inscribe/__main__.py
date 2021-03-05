@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import json
 import os
 
 from argparse import ArgumentParser
@@ -10,70 +11,64 @@ from urllib.parse import urlencode
 from requests import get, post
 
 
-def moodle_post(host, data, moodle_session) -> Dict:
+def moodle_post(host, sesskey, data, moodle_session) -> Dict:
     response = post(
-        'https://{}/enrol/manual/ajax.php'.format(host),
-        data=urlencode(data),
+        'https://{host}/lib/ajax/service.php?sesskey={sesskey}&info=core_enrol_get_potential_users'.format(host=host, sesskey=sesskey),
+        json=data,
         cookies={'MoodleSession': moodle_session},
-        headers={'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8'}
+        headers={'Content-Type': 'application/json'}
     )
     if not response.ok:
         raise Exception(response.raw)
     json_response = response.json()
-    if json_response.get('error') or json_response.get('success') is not True:
+    if json_response[0].get('error'):
         raise Exception(json_response)
-    return json_response['response']
+    return json_response[0]['data']
 
 
 def get_enrolid_and_sesskey(host, course_id, moodle_session) -> Tuple[str, str]:
     html = get(
-        'https://{host}/enrol/instances.php?id={course_id}'.format(host=host, course_id=course_id),
+        'https://{host}/user/index.php?id={course_id}'.format(host=host, course_id=course_id),
         cookies={'MoodleSession': moodle_session}
     )
     html_str = html.content.decode()
-    enrol_match = search('https:\\/\\/{}\\/enrol\\/manual\\/manage.php\\?enrolid=([0-9]+)'.format(host), html_str)
+    enrol_match = search('name="enrolid" value="([0-9]+)"', html_str)
     assert enrol_match
     enrolid = enrol_match.groups()[0]
-    sesskey_match = search('"sesskey":"([^"]+)"', html_str)
+    sesskey_match = search('name="sesskey" value="([^"]+)"', html_str)
     assert sesskey_match
     sesskey = sesskey_match.groups()[0]
     return enrolid, sesskey
 
 
-def get_student(host, course_id, student_email, sesskey, enrolid, moodle_session) -> Optional[Dict]:
-    data = {
-        'id': course_id,
-        'sesskey': sesskey,
-        'action': 'searchusers',
-        'search': student_email,
-        'page': 0,
-        'enrolcount': 0,
-        'perpage': 25,
-        'enrolid': enrolid
-    }
-    json_result = moodle_post(host, data, moodle_session)
-    users = json_result['users']
-    if len(users) == 0:
+def get_student(host, course_id, student_email, sesskey, enrol_id, moodle_session) -> Optional[Dict]:
+    data = [{
+        "index":0,
+        "methodname":"core_enrol_get_potential_users",
+        "args":{
+            "courseid":str(course_id),
+            "enrolid":str(enrol_id),
+            "search":str(student_email),
+            "searchanywhere":True,
+            "page":0,
+            "perpage":101,
+        },
+    }]
+
+    json_result = moodle_post(host, sesskey, data, moodle_session)
+    if len(json_result) == 0:
         return None
-    elif len(users) == 1:
-        return users[0]
+    elif len(json_result) == 1:
+        return json_result[0]
     else:
         raise Exception('"{}" not unique:\n{}'.format(student_email, json_result))
 
 
 def inscribe_student(host, course_id, userid, sesskey, enrolid, moodle_session, role) -> None:
-    data = {
-        'sesskey': sesskey,
-        'id': course_id,
-        'userid': userid,
-        'enrolid': enrolid,
-        'action': 'enrol',
-        'role': role,
-        'startdate': 3,
-        'duration': 0,
-        'recovergrades': 0,
-    }
-    moodle_post(host, data, moodle_session)
+    html = get(
+        'https://{host}/enrol/manual/ajax.php?mform_showmore_main=0&id={course_id}&action=enrol&enrolid={enrolid}&sesskey={sesskey}&_qf__enrol_manual_enrol_users_form=1&mform_showmore_id_main=0&userlist%5B%5D={userid}&roletoassign={role}&startdate=3&duration='.format(host=host, course_id=course_id, enrolid=enrolid, sesskey=sesskey, userid=userid, role=role ),
+        cookies={'MoodleSession': moodle_session}
+    )
 
 
 def read_emails(file) -> list:
@@ -132,13 +127,11 @@ def main() -> int:
             enrolid, sesskey = get_enrolid_and_sesskey(args.host, args.course_id, args.moodle_session)
             student = get_student(args.host, args.course_id, email, sesskey, enrolid, args.moodle_session)
             if student:
-                inscribe_student(
-                    args.host, args.course_id, student['id'], sesskey, enrolid, args.moodle_session, args.role
-                )
+                inscribe_student(args.host, args.course_id, student['id'], sesskey, enrolid, args.moodle_session, args.role)
                 print('Successfully inscribed {}'.format(student['fullname']))
             else:
                 inscribe_error = True
-                print('No student found with email "{}", or student already inscribed.'.format(args.email))
+                print('No student found with email "{}", or student already inscribed.'.format(email))
 
     if inscribe_error:
         return 1
