@@ -56,12 +56,13 @@ def get_student(host, course_id, student_email, sesskey, enrol_id, moodle_sessio
     }]
 
     json_result = moodle_post(host, sesskey, data, moodle_session)
-    if len(json_result) == 0:
+    users = [user for user in json_result['users'] if user['email'] == student_email]
+    if len(users) == 0:
         return None
-    elif len(json_result) == 1:
-        return json_result[0]
+    elif len(users) == 1:
+        return users[0]
     else:
-        raise Exception('"{}" not unique:\n{}'.format(student_email, json_result))
+        raise Exception('"{}" not unique:\n{}'.format(student_email, users))
 
 
 def inscribe_student(host, course_id, userid, sesskey, enrolid, moodle_session, role) -> None:
