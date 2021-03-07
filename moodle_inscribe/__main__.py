@@ -1,19 +1,19 @@
 #!/usr/bin/env python3
 
-import json
 import os
 
 from argparse import ArgumentParser
 from re import search
 from typing import Dict, Optional, Tuple
-from urllib.parse import urlencode
 
 from requests import get, post
 
 
 def moodle_post(host, sesskey, data, moodle_session) -> Dict:
     response = post(
-        'https://{host}/lib/ajax/service.php?sesskey={sesskey}&info=core_enrol_get_potential_users'.format(host=host, sesskey=sesskey),
+        'https://{host}/lib/ajax/service.php?sesskey={sesskey}&info=core_enrol_get_potential_users'.format(
+            host=host, sesskey=sesskey
+        ),
         json=data,
         cookies={'MoodleSession': moodle_session},
         headers={'Content-Type': 'application/json'}
@@ -43,15 +43,15 @@ def get_enrolid_and_sesskey(host, course_id, moodle_session) -> Tuple[str, str]:
 
 def get_student(host, course_id, student_email, sesskey, enrol_id, moodle_session) -> Optional[Dict]:
     data = [{
-        "index":0,
-        "methodname":"core_enrol_get_potential_users",
-        "args":{
-            "courseid":str(course_id),
-            "enrolid":str(enrol_id),
-            "search":str(student_email),
-            "searchanywhere":True,
-            "page":0,
-            "perpage":101,
+        "index": 0,
+        "methodname": "core_enrol_get_potential_users",
+        "args": {
+            "courseid": str(course_id),
+            "enrolid": str(enrol_id),
+            "search": str(student_email),
+            "searchanywhere": True,
+            "page": 0,
+            "perpage": 101,
         },
     }]
 
@@ -66,8 +66,19 @@ def get_student(host, course_id, student_email, sesskey, enrol_id, moodle_sessio
 
 
 def inscribe_student(host, course_id, userid, sesskey, enrolid, moodle_session, role) -> None:
-    html = get(
-        'https://{host}/enrol/manual/ajax.php?mform_showmore_main=0&id={course_id}&action=enrol&enrolid={enrolid}&sesskey={sesskey}&_qf__enrol_manual_enrol_users_form=1&mform_showmore_id_main=0&userlist%5B%5D={userid}&roletoassign={role}&startdate=3&duration='.format(host=host, course_id=course_id, enrolid=enrolid, sesskey=sesskey, userid=userid, role=role ),
+    get(
+        'https://{host}/enrol/manual/ajax.php?'
+        'mform_showmore_main=0&'
+        'id={course_id}&'
+        'action=enrol&'
+        'enrolid={enrolid}&'
+        'sesskey={sesskey}&'
+        '_qf__enrol_manual_enrol_users_form=1&'
+        'mform_showmore_id_main=0&'
+        'userlist%5B%5D={userid}&'
+        'roletoassign={role}&'
+        'startdate=3&'
+        'duration='.format(host=host, course_id=course_id, enrolid=enrolid, sesskey=sesskey, userid=userid, role=role),
         cookies={'MoodleSession': moodle_session}
     )
 
@@ -128,7 +139,9 @@ def main() -> int:
             enrolid, sesskey = get_enrolid_and_sesskey(args.host, args.course_id, args.moodle_session)
             student = get_student(args.host, args.course_id, email, sesskey, enrolid, args.moodle_session)
             if student:
-                inscribe_student(args.host, args.course_id, student['id'], sesskey, enrolid, args.moodle_session, args.role)
+                inscribe_student(
+                    args.host, args.course_id, student['id'], sesskey, enrolid, args.moodle_session, args.role
+                )
                 print('Successfully inscribed {}'.format(student['fullname']))
             else:
                 inscribe_error = True
