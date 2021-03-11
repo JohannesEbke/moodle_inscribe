@@ -56,7 +56,11 @@ def get_student(host, course_id, student_email, sesskey, enrol_id, moodle_sessio
     }]
 
     json_result = moodle_post(host, sesskey, data, moodle_session)
-    users = [user for user in json_result['users'] if user['email'] == student_email]
+
+    if isinstance(json_result, dict):
+        json_result = json_result['users']
+
+    users = [user for user in json_result if user['email'] == student_email]
     if len(users) == 0:
         return None
     elif len(users) == 1:
