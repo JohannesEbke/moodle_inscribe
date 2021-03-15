@@ -21,4 +21,4 @@ Quick Start::
 
   mkvirtualenv -p $(which python3) moodle
   python setup.py develop
-  moodle_inscrible --host moodle.hm.edu --course-id 42 --email johannes.ebke@hm.edu --moodle-session AZ42foo
+  moodle_inscribe --host moodle.hm.edu --course-id 42 --email johannes.ebke@hm.edu --moodle-session AZ42foo
