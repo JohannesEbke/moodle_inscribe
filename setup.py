@@ -11,7 +11,7 @@ with open(path.join(here, 'README.rst'), encoding='utf-8') as f:
 
 setup(
     name='moodle_inscribe',
-    version='3.9.0',
+    version='3.9.1',
     description='Inscribe students into moodle courses by their email. Works with Moodle 3.9.',
     long_description=long_description,
     url='https://github.com/JohannesEbke/moodle_inscribe',
